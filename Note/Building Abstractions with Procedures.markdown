@@ -5,7 +5,7 @@
     ```Scheme
     (define (<name> <formal parameters>) <body1>                                           <body2>
                                            ...
-                                         <bodyN>))
+                                         <bodyN>)
     ```
    解释器将顺序求值各个body，并以最后一个表达式的值作为整个过程的值
 2. cond

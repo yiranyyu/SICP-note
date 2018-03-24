@@ -1,4 +1,6 @@
 #lang racket
+(provide abs gcd square cube pow log2 average even? incre decre)
+
 (define (abs val)
   (cond ((> val 0) val)
         ((< val 0) (- val))
