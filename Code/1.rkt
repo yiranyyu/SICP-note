@@ -1,5 +1,5 @@
 #lang racket
-(provide abs gcd square cube pow log2 average even? incre decre)
+(provide abs gcd square cube pow log2 average even? incre decre fib prime?)
 
 (define (abs val)
   (cond ((> val 0) val)
@@ -117,9 +117,6 @@
         ((< b 0) (- (multiplyIter a (- b) 0)))
         (else (multiplyIter a b 0))))
 
-(define (fib n)
-  (fib-iter 1 0 0 1 n))
-
 (define (fib-iter a b p q count)
   (cond ((= count 0) b)
         ((even? count) (fib-iter a  
@@ -132,6 +129,10 @@
                         p
                         q
                         (- count 1)))))
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+                      
 (define (fib-slow n)
   (cond ((< n 2) n)
         (else (+ (fib-slow (- n 1)) (fib-slow (- n 2))))))

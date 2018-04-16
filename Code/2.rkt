@@ -272,9 +272,451 @@
                       (add-interval (div-interval one r1)
                                     (div-interval one r2)))))
 
-(define r1 (make-interval 1 2))
-(define r2 (make-interval 2 4))
-(div-interval r1 r1)
-(div-interval r1 r2)
-(par1 r1 r2)
-(par2 r1 r2)
+(define (list-ref lst index)
+    (cond ((< index 0) (error "negative index"))
+          ((= index 0) (car lst))
+          (else (list-ref (cdr lst) (decre index)))))
+
+
+(define (list-length lst)
+    (define (length-iter lst len)
+        (if (null? lst)
+            len
+            (length-iter (cdr lst) (incre len))))
+  (length-iter lst 0))
+
+(define (append lst1 lst2)
+    (if (null? lst1)
+        lst2
+        (cons (car lst1)
+              (append (cdr lst1) lst2))))
+
+(define (last-pair lst)
+    (let ((rest (cdr lst)))
+        (if (null? rest)
+            lst
+            (last-pair rest))))
+
+(define (reverse lst)
+    (if (null? lst)
+        lst
+        (append (reverse (cdr lst))
+                (list (car lst)))))
+
+(define logic-eq (lambda (a b) (not (xor a b ))))
+
+(define (same-parity n . lst)
+    (define (select is-even numbers)
+        (define (iter rest result)
+            (cond ((null? rest) result)
+                  (else (let ((first (car rest)))
+                             (if (logic-eq is-even (even? first))
+                                 (iter (cdr rest) (append result (list first)))
+                                 (iter (cdr rest) result))))))
+        (iter numbers '()))
+    (select (even? n) lst))
+
+(define (scale-list items factor)
+    (map (lambda (x) (* x factor))
+         items))
+
+(define (square-list items)
+    (map (lambda (x) (square x)) 
+         items))
+        
+(define (square-list2 items)
+    (if (null? items)
+        null
+        (cons (square (car items)) 
+              (square-list2 (cdr items)))))
+        
+(define (for-each proc list)
+    (cond ((null? list) null)
+        (else (proc (car list))
+              (for-each proc (cdr list)))))
+
+(define (count-leaves lst)
+    (cond ((null? lst) 0)
+          ((pair? lst) (+ (count-leaves (car lst)
+                                      (cdr lst))))
+          (else 1)))
+
+(define (scale-tree tree factor)
+    (cond ((null? tree) null)
+          ((pair? tree) (cons (scale-tree (car tree) factor)
+                              (scale-tree (cdr tree) factor)))
+          (else (* factor tree))))
+
+(define (scale-tree2 tree factor)
+    (map (lambda (sub-tree)
+                 (if (pair? sub-tree)
+                     (scale-tree2 sub-tree factor)
+                     (* sub-tree factor)))
+         tree)) 
+
+(define (square-tree tree)
+    (map (lambda (sub-tree) 
+                 (if (pair? sub-tree)
+                     (square-tree sub-tree)
+                     (square sub-tree)))
+         tree))
+
+(define (tree-map proc tree)
+    (map (lambda (sub-tree)
+                 (if (pair? sub-tree)
+                     (tree-map proc sub-tree)
+                     (proc sub-tree)))
+    tree))
+
+(define (square-tree-using-tree-map tree)
+    (tree-map square tree))
+
+(define (filter predicate sequence) ;; select elements that returns true of predicate
+    (cond ((null? sequence) null)
+          ((predicate (car sequence)) (cons (car sequence) 
+                                            (filter predicate (cdr sequence))))
+          (else (filter predicate (cdr sequence)))))
+
+(define (accumulate op initial sequence)
+    (if (null? sequence)
+        initial
+        (op (car sequence)
+            (accumulate op initial (cdr sequence)))))
+
+(define (range low high)
+    (if (> low high)
+        null
+        (cons low (range (incre low) high))))
+
+(define (enumerate-tree tree)
+    (cond ((null? tree) null)
+          ((pair? tree) (append (enumerate-tree (car tree))
+                                (enumerate-tree (cdr tree))))
+          (else (list tree))))
+
+(define (sum-odd-squares tree)
+    (accumulate + 
+                0
+                (map square
+                     (filter odd?
+                             (enumerate-tree tree)))))
+
+(define (even-fibs n)
+    (accumulate cons
+                null
+                (filter even?
+                        (map fib
+                             (range 0 n)))))
+
+(define (flatmap make-seq seq)
+    (accumulate append null (map make-seq seq)))
+
+(define (prime-sum? pair)
+    (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+    (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+    (map make-pair-sum
+         (filter prime?
+                 (flatmap
+                  (lambda (i)
+                          (map (lambda (j) (list i j))
+                               (range 1 (decre i))))
+                  (range 1 n)))))
+
+(define (permutation s)
+    (if (null? s)
+        (list null)
+        (flatmap (lambda (x)
+                     (map (lambda (p) (cons x p))
+                          (permutation (remove x s))))
+                  s)))
+
+(define (remove item sequence)
+    (filter (lambda (x) (not (= x item)))
+            sequence))
+
+(define (memq item lst)
+    (cond ((null? lst) false)
+          ((eq? (car lst) item) lst)
+          (else (memq item (cdr lst)))))
+
+(define (my_equal? lst_a lst_b)
+    (cond ((null? lst_a) (null? lst_b))
+          ((null? lst_b) false)
+          (else (let ((first_a (car lst_a))
+                      (first_b (car lst_b)))
+                    (cond ((pair? first_a) (and (pair? first_b) 
+                                                (my_equal? first_a first_b)
+                                                (my_equal? (cdr lst_a) 
+                                                           (cdr lst_b))))
+                          (else (and (not (pair? first_b))
+                                     (eq? first_a first_b)
+                                     (my_equal? (cdr lst_a)
+                                                (cdr lst_b)))))))))
+
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp) (if (same-variable? exp var) 1 0))
+        ((sum? exp) (make-sum (deriv (addend exp) var)
+                              (deriv (augend exp) var)))
+        ((product? exp) (make-sum 
+                         (make-product (multiplier exp)
+                                       (deriv (multiplicand exp) var))
+                         (make-product (deriv (multiplier exp) var)
+                                       (multiplicand exp))))
+        ((exponentiation? exp) (make-product
+                                (make-product (exponent exp)
+                                            (deriv (base exp) var))
+                                (make-exponentiation 
+                                    (base exp)
+                                    (decre (exponent exp)))))
+        (else (error "unknown expression type -- DERIV" exp))))
+
+(define (variable? x)
+    (symbol? x))
+
+(define (same-variable? x y)
+    (and (variable? x) 
+         (variable? y)
+         (eq? x y)))
+
+(define (make-sum a1 a2)
+    (cond ((=number? a1 0) a2)
+          ((=number? a2 0) a1)
+          ((and (number? a1) (number? a2)) (+ a1 a2))
+          (else (list '+ a1 a2))))
+
+(define (make-sum-list lst)
+    (cons '+ lst))      
+
+(define (make-product m1 m2)
+    (cond ((or (=number? m1 0)
+               (=number? m2 0)) 0)
+          ((=number? m1 1) m2)
+          ((=number? m2 1) m1)
+          ((and (number? m1)
+                (number? m2)) (* m1 m2))
+          (else (list '* m1 m2))))
+
+;; input: (list 'a 'b 'c 'd)
+;; output:(list '* 'a 'b 'c 'd)
+(define (make-product-list lst)
+    (cons '* lst))
+
+(define (make-exponentiation base expo)
+    (cond ((=number? base 0) 0)
+          ((=number? expo 0) 1)
+          ((and (number? base)
+                (number? expo) (pow base expo)))
+          (else (list '** base expo))))
+
+(define (sum? x)
+    (and (pair? x)
+         (eq? (car x) '+ )))
+
+(define (addend x)  ; second item in a sum expression
+    (cadr x))
+
+(define (augend x)
+    (let ((rest (cddr x)))
+        (cond ((= 1 (length rest)) (car rest))
+              (else  (make-sum-list rest)))))
+
+(define (product? x)
+    (and (pair? x)
+         (eq? (car x) '* )))
+
+(define (multiplier p)  ; second item in product expression
+    (cadr p))
+
+(define (multiplicand p)
+    (let ((rest (cddr p)))
+         (cond ((= 1 (length rest)) (car rest))
+               (else (make-product-list rest)))))
+
+(define (exponentiation? x)
+    (and (pair? x)
+         (eq? (car x) '** )))
+    
+(define (base e)
+    (cadr e))
+
+(define (exponent e)
+    (caddr e))
+
+(define (=number? arg num)
+    (and (number? arg)
+         (= arg num)))
+
+(define (make-set lst)
+    (if (pair? lst)
+        lst
+        (list lst)))
+
+(define (element-of-set? x set)
+    (cond ((null? set) false)
+          ((equal? x (car set)) true)
+          (else (element-of-set? x (cdr set)))))
+
+(define (adjoin-set x set)
+    (if (element-of-set? x set)
+        set
+        (cons x set)))
+
+(define (intersection-set set1 set2)
+    (cond ((or (null? set1)
+               (null? set2)) '())
+          ((element-of-set? (car set1) set2) 
+           (cons (car set1)
+               (intersection-set (cdr set1) set2)))
+          (else (intersection-set (cdr set1) set2))))
+
+(define (union-set set1 set2)
+    (cond ((null? set1) set2)
+          ((null? set2) set1)
+          (else (append (filter
+                            (lambda (item) (not (element-of-set? item set2))) 
+                            set1) 
+                        set2))))
+
+(define (make-ordered-number-set lst)
+    (cond ((pair? lst) (union-ordered-number-set (list (car lst)) 
+                                                 (cdr lst)))
+          (else (list lst))))
+
+(define (element-of-ordered-number-set? x set)
+    (cond ((null? set) false)
+          ((= x (car set)) true)
+          ((< x (car set)) false)
+          (else (element-of-ordered-number-set? x (cdr set)))))
+
+(define (intersection-ordered-number-set set1 set2)
+    (if (or (null? set1) (null? set2))
+        '()
+        ((let ((x1 (car set1))
+               (x2 (car set2)))
+            (cond ((= x1 x2) 
+                   (cons x1
+                        (intersection-ordered-number-set 
+                            (cdr set1)
+                            (cdr set2))))
+                  ((< x1 x2)
+                   (intersection-ordered-number-set (cdr set1) set2))
+                  (else (intersection-ordered-number-set set1 (cdr set2))))))))
+
+(define (union-ordered-number-set set1 set2)
+    (cond ((null? set1) set2)
+          ((null? set2) set2)
+          (else
+           (let ((x1 (car set1))
+                 (x2 (car set2)))
+              (cond ((= x1 x2) 
+                     (cons x1
+                        (union-ordered-number-set (cdr set1)
+                                                  (cdr set2))))
+                    ((< x1 x2) 
+                     (cons x1
+                        (union-ordered-number-set (cdr set1)
+                                                  set2)))
+                    (else 
+                     (cons x2 
+                        (union-ordered-number-set set1
+                                                  (cdr set2)))))))))
+
+(define (adjoin-ordered-number-set x set)
+    (cond ((null? set) (make-ordered-number-set x))
+          (else (let ((x1 (car set)))
+                     (cond ((= x x1) set)
+                           ((< x x1) (cons x set))
+                           (else (cons x1 (adjoin-ordered-number-set x (cdr set)))))))))
+
+(define (root tree)
+    (car tree))
+
+(define (left-branch tree)
+    (cadr tree))
+
+(define (right-branch tree)
+    (caddr tree))
+
+(define (make-leaf value)
+    (list value '() '()))
+
+(define (make-tree root left right)
+    (list root left right))
+
+(define (element-of-tree? x tree)
+    (cond ((null? tree) false)
+          (else 
+            (let ((root (root tree)))
+                 (cond ((= x root) true)
+                       ((< x root) (element-of-tree? x 
+                                                    (left-branch tree)))
+                       (else (element-of-tree? x 
+                                              (right-branch tree))))))))
+
+(define (adjoin-tree x tree)
+    (cond ((null? tree) (make-tree x '() '()))
+          (else
+            (let ((root (root tree)))
+                 (cond ((= x root) 
+                        tree)
+                       ((< x root) 
+                        (make-tree root 
+                                   (adjoin-tree x (left-branch tree))
+                                   (right-branch tree)))
+                       (else
+                        (make-tree root
+                                   (left-branch tree)
+                                   (adjoin-tree x (right-branch tree)))))))))
+
+
+(define (tree->list-1 tree)
+    (if (null? tree)
+        '()
+        (append (tree->list-1 (left-branch tree))
+                (cons (root tree)
+                      (tree->list-1 (right-branch tree))))))
+
+(define (tree->list-2 tree)
+    (define (copy-to-list tree result-list)
+        (if (null? tree)
+            result-list
+            (copy-to-list (left-branch tree)
+                          (cons (root tree)
+                                (copy-to-list (right-branch tree)
+                                              result-list)))))
+  (copy-to-list tree '() ))
+
+(define (list->tree lst)
+    (car (partial-tree lst (length lst))))
+
+;; return a pair
+;; first part is a tree of the first n elements
+;; second part is the rest elements
+(define (partial-tree lst n)
+    (if (= n 0)
+        (cons '() lst)
+        (let ((left-size (quotient (decre n) 2)))
+            (let ((left-result (partial-tree lst left-size)))
+                (let ((left-tree (car left-result))
+                      (non-left-lst (cdr left-result))
+                      (right-size (- n (incre left-size))))
+                    (let ((this-root (car non-left-lst))
+                          (right-result (partial-tree (cdr non-left-lst)
+                                                      right-size)))
+                        (let ((right-tree (car right-result))
+                               (remaining-lst (cdr right-result)))
+                            (cons (make-tree this-root left-tree right-tree)
+                                  remaining-lst))))))))
+
+(define set1 (make-set (list 1 2 3)))
+(define set2 (make-set (list 3 4 5)))
+(define test adjoin-ordered-number-set)
+(define tree (make-tree 4 (make-tree 2 (make-tree 1 '() '())
+                                       (make-tree 3 '() '()))
+                          (make-tree 6 (make-tree 5 '() '())
+                                       (make-tree 7 '() '()))))

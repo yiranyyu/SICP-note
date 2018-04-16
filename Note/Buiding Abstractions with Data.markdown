@@ -37,3 +37,87 @@
 (define (car z) (z 0))
 (define (cdr z) (z 1))
 ```
+
+## 层次性数据和闭包性质
+
+一般说，某种组合数据对象的操作满足闭包性质，那就是说，通过它组合起数据对象得到的结果本身还可以通过同样的操作再进行组合
+
+### 序对的表示
+
+```scheme
+(cons 1
+      (cons (2
+            (cons (3
+                   (cons 4 null))))))
+
+;; same to
+
+(list 1 2 3 4)
+```
+
+* The procedures +, *, and list take arbitrary numbers of arguments. One way to define such procedures is to use define with dotted-tail notation.
+
+```scheme
+(define (f x . z) <body>) ;; you can call f with one or more arguments
+
+(f 40)  ;; x is 40 z is ()
+(f 3 2) ;; x is 3 z is (2)
+```
+
+### 对表的映射
+
+```Scheme
+(define (map proc items)
+    (if (null? items)
+        null
+        (cons (car items)
+              (map proc (cdr items)))))
+```
+
+Scheme standardly provides a map procedure that is more general than the one described here. This more general map takes a procedure of n arguments, together with n lists, and applies the procedure to all the first elements of the lists, all the second elements of the lists, and so on, returning a list of the results. For example:
+
+```Scheme
+(map + (list 1 2 3) (list 40 50 60) (list 700 800 900))
+(741 852 963)
+
+(map (lambda (x y) (+ x (* 2 y)))
+     (list 1 2 3)
+     (list 4 5 6))
+(9 12 15)
+```
+
+### 层次性结构
+
+Scheme 提供了基本过程`pair?`，它检查其参数是否为序对.
+
+## 符号数据
+
+在Scheme中一个单引号的意义就是引用下一个对象
+
+```Scheme
+(define a 1)
+(define b 2)
+
+(list a b)
+; (1 2)
+
+(list 'a 'b)
+; (a b)
+
+(list 'a b)
+; (a 2)
+```
+
+引号也用于复合对象:
+
+```Scheme
+(car '(a b c))
+; a
+
+(cdr '(a  b c))
+; (b c)
+```
+
+* 引号只不过是一种将下一个完整表达式用`(quote <expression>)`形式包裹的单字符缩写形式
+* 可以通过求值 `'()`得到空表
+* 为了能够对符号做各种操作，我们还需要另一个基本过程`eq?`.这个过程以两个符号作为参数，检查它们是否为相同的符号
